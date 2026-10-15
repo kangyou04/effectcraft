@@ -1,12 +1,6 @@
-<p align="center">
-  <a href="https://getartcraft.com/">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="docs/brand/artcraft-logo-white.svg">
-      <img alt="ArtCraft" src="docs/brand/artcraft-logo.svg" width="200">
-    </picture>
-  </a>
-</p>
+# EffectCraft 한국어 커뮤니티 빌드
 
+[한국어 설치 안내](README-KO.md). Based on EffectCraft by the ArtCraft team. This is an unofficial modified build maintained by kangyou04.
 
 <h1 align="center">EffectCraft</h1>
 
