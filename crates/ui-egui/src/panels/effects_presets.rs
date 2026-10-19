@@ -147,7 +147,7 @@ fn folder_row(
         Some(i) => icons::paint(lp, ic, i, t.text_dim),
         None => icons::paint(lp, ic, Icon::Folder, Color32::from_rgb(0xc8, 0xb0, 0x58)),
     }
-    lp.text(pos2(r.min.x + 40.0 + indent, r.center().y), Align2::LEFT_CENTER, label, Tokens::ui(12.0), t.text);
+    lp.text(pos2(r.min.x + 40.0 + indent, r.center().y), Align2::LEFT_CENTER, tr(label), Tokens::ui(12.0), t.text);
     app.auto.add(&format!("effects.category.{key}"), r, label);
     if resp.clicked() && !forced_open {
         if open {
@@ -186,10 +186,10 @@ fn effect_row(
         lp.rect_filled(r, 0.0, t.hover);
     }
     icons::paint(lp, Rect::from_center_size(pos2(r.min.x + 44.0 + indent, r.center().y), vec2(12.0, 12.0)), Icon::Fx, t.text_dim);
-    // The row draws the effect's name in the interface language; the automation label keeps the
-    // registry's English name, which is what scripts and the control channel address (#821).
+    // Automation IDs stay English; only the visible label is translated.
     let shown = crate::i18n::effects::name(e.id, e.name);
-    highlighted(lp, pos2(r.min.x + 56.0 + indent, r.center().y), &shown, query, &t);
+    let shown = tr(&shown);
+    highlighted(lp, pos2(r.min.x + 56.0 + indent, r.center().y), shown, query, &t);
     if e.float {
         lp.text(pos2(r.max.x - 10.0, r.center().y), Align2::RIGHT_CENTER, "32", Tokens::ui(9.5), t.text_faint);
     }
@@ -243,7 +243,8 @@ fn preset_row(
         lp.rect_filled(r, 0.0, t.hover);
     }
     icons::paint(lp, Rect::from_center_size(pos2(r.min.x + 58.0, r.center().y), vec2(12.0, 12.0)), Icon::Keyframe, t.text_dim);
-    highlighted(lp, pos2(r.min.x + 70.0, r.center().y), name, query, &t);
+    let shown_name = if auto_id.starts_with("effects.preset.file.") { name } else { tr(name) };
+    highlighted(lp, pos2(r.min.x + 70.0, r.center().y), shown_name, query, &t);
     app.auto.add(auto_id, r, name);
     if resp.double_clicked() {
         *apply = Some(on_apply());
@@ -288,7 +289,10 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
     }
     app.auto.add("effects.menu", mr, "Effects & Presets options");
     let view = app.ui.effects_view.clone();
-    let mark = |on: bool, l: &str| if on { format!("✓ {l}") } else { format!("    {l}") };
+    let mark = |on: bool, l: &str| {
+        let l = tr(l);
+        if on { format!("✓ {l}") } else { format!("    {l}") }
+    };
     let copy_label = format!("    {}", tr("Copy Presets Folder Path"));
     let menu = vec![
         mark(view.depth == "all", "Show Effects for All Color Depths"),
@@ -300,8 +304,8 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
         mark(!view.alphabetical, "Categories"),
         mark(view.alphabetical, "Alphabetical"),
         "-".into(),
-        "    Refresh List".into(),
-        "    Clear Recently Used".into(),
+        format!("    {}", tr("Refresh List")),
+        format!("    {}", tr("Clear Recently Used")),
         "-".into(),
         copy_label.clone(),
     ];
@@ -359,7 +363,10 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
     let reg = effectcraft_engine::effects::all();
     let keep = |e: &effectcraft_engine::effects::EffectSpec| {
         depth_keeps(&view.depth, e)
-            && (query.is_empty() || effectcraft_engine::effects::name_matches(e, &query) || crate::i18n::effects::matches(e.id, e.name, &query))
+            && (query.is_empty()
+                || effectcraft_engine::effects::name_matches(e, &query)
+                || crate::i18n::effects::matches(e.id, e.name, &query)
+                || tr(e.name).to_lowercase().contains(&query))
     };
     let lookup = |id: &str| reg.iter().find(|e| e.id == id);
 
@@ -381,10 +388,14 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
 
     // * Animation Presets: our own presets (Text, Transitions…) and the user's .ecpreset files.
     if view.presets {
-        let text: Vec<(String, String)> =
-            effectcraft_engine::text_presets().into_iter().filter(|(_, n)| query.is_empty() || n.to_lowercase().contains(&query)).collect();
-        let builtin: Vec<(String, String, String)> =
-            effectcraft_engine::animation_presets().into_iter().filter(|(_, n, _)| query.is_empty() || n.to_lowercase().contains(&query)).collect();
+        let text: Vec<(String, String)> = effectcraft_engine::text_presets()
+            .into_iter()
+            .filter(|(_, n)| query.is_empty() || n.to_lowercase().contains(&query) || tr(n).to_lowercase().contains(&query))
+            .collect();
+        let builtin: Vec<(String, String, String)> = effectcraft_engine::animation_presets()
+            .into_iter()
+            .filter(|(_, n, _)| query.is_empty() || n.to_lowercase().contains(&query) || tr(n).to_lowercase().contains(&query))
+            .collect();
         let mut categories: Vec<&str> = Vec::new();
         for (_, _, c) in &builtin {
             if !categories.contains(&c.as_str()) {
@@ -462,7 +473,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
     {
         let name = effectcraft_engine::effects::find(id).map(|e| crate::i18n::effects::name(e.id, e.name)).unwrap_or_default();
         let painter = ctx.layer_painter(egui::LayerId::new(egui::Order::Tooltip, egui::Id::new("dnd-fx")));
-        let g = painter.layout_no_wrap(name, Tokens::ui(12.0), t.text);
+        let g = painter.layout_no_wrap(tr(&name).to_string(), Tokens::ui(12.0), t.text);
         let r = Rect::from_min_size(pos + vec2(12.0, 8.0), g.size() + vec2(16.0, 8.0));
         painter.rect_filled(r, 4.0, Color32::from_rgba_premultiplied(40, 40, 40, 230));
         painter.rect_stroke(r, 4.0, Stroke::new(1.0, t.accent), egui::StrokeKind::Inside);

@@ -320,7 +320,7 @@ fn field(ui: &mut Ui, rect: Rect, text: &mut String, hint: &str, t: &Tokens, sea
     let mut child = ui.new_child(egui::UiBuilder::new().max_rect(inner));
     child.add(
         egui::TextEdit::singleline(text)
-            .hint_text(hint)
+            .hint_text(crate::i18n::tr(hint))
             .frame(egui::Frame::NONE)
             .desired_width(inner.width())
             // As tall as the field, so the text and the hint sit on its middle (they sat high, #581).

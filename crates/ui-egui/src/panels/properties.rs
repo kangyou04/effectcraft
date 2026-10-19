@@ -174,7 +174,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
 
 fn section_header(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter, x0: f32, w: f32, y: f32, title: &str, auto: &str) {
     let t = app.tokens;
-    p.text(pos2(x0, y + ROW_H / 2.0), Align2::LEFT_CENTER, title, Tokens::semibold(12.0), t.text);
+    p.text(pos2(x0, y + ROW_H / 2.0), Align2::LEFT_CENTER, tr(title), Tokens::semibold(12.0), t.text);
     let r = Rect::from_min_size(pos2(x0, y), vec2(w, ROW_H));
     let _ = ui;
     app.auto.add(auto, r, title);
@@ -242,7 +242,7 @@ fn transform_row(app: &mut EffectcraftApp, ui: &mut egui::Ui, p: &egui::Painter,
             actions.push(("prop.toggleAnimation".into(), json!({"layer": lid, "prop": uid, "selected": true})));
         }
     }
-    p.text(pos2(r.min.x + 42.0, cy), Align2::LEFT_CENTER, &pr.name, Tokens::ui(12.0), t.text);
+    p.text(pos2(r.min.x + 42.0, cy), Align2::LEFT_CENTER, tr(&pr.name), Tokens::ui(12.0), t.text);
     let vx = r.min.x + (r.width() * 0.5).max(130.0);
     let label = Rect::from_min_max(pos2(r.min.x + 42.0, r.min.y), pos2(vx - 20.0, r.max.y));
     let resp = ui.interact(label, egui::Id::new(("props-label", uid)), Sense::click());

@@ -62,7 +62,7 @@ pub fn home_tab(app: &mut EffectcraftApp, ui: &mut egui::Ui, area: Rect) {
     p.text(
         pos2(x, y + 26.0),
         Align2::LEFT_CENTER,
-        "Start from a ready-made project. Opening a template makes an untitled copy.",
+        crate::i18n::tr("Start from a ready-made project. Opening a template makes an untitled copy."),
         Tokens::ui(11.5),
         t.text_faint,
     );

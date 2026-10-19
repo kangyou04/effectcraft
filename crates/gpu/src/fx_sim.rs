@@ -283,6 +283,7 @@ fn mercury(e: &mut Enc, ctx: &EffectCtx, b: GBuf, geo: &effectcraft_effects::Buf
     p.f[1] = [pr.f("shading/metal") as f32 / 100.0, pr.f("light/lightIntensity") as f32 / 100.0, b.scale as f32, 0.0];
     p.f[2] = [l[0], l[1], l[2], 0.0];
     p.f[3] = [lc[0], lc[1], lc[2], 0.0];
+    p.u[1][0] = u32::from(pr.b("extras/useSourceAlpha"));
     let out = e.scratch(w, h);
     e.pixels("fxm_mercury", &p, &b.img, Some(&field), &out, None);
     Some(GBuf { img: out, ..b })

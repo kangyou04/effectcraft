@@ -321,7 +321,7 @@ pub fn mask_interpolation(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rec
             changes.insert("keyframeRate".into(), json!(nr));
         }
     } else {
-        p.text(pos2(xv + 78.0, y + 9.0), Align2::LEFT_CENTER, "per second", Tokens::ui(12.0), t.text_dim);
+        p.text(pos2(xv + 78.0, y + 9.0), Align2::LEFT_CENTER, crate::i18n::tr("per second"), Tokens::ui(12.0), t.text_dim);
     }
     y += ROW;
     let mut check = |app: &mut EffectcraftApp, y: f32, key: &str, text: &str, on: bool| {

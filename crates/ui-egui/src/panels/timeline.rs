@@ -1386,7 +1386,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
     let t = app.tokens;
     let ctx = ui.ctx().clone();
     let Some(cid) = app.session.active_comp_id() else {
-        ui.painter().text(rect.center(), Align2::CENTER_CENTER, "(no composition)", Tokens::ui(12.0), t.text_faint);
+        ui.painter().text(rect.center(), Align2::CENTER_CENTER, crate::i18n::tr("(no composition)"), Tokens::ui(12.0), t.text_faint);
         // Dropping footage into an empty Timeline should create its first composition,
         // just like dropping onto the Project panel's New Composition button (#649).
         if let Some(crate::panels::DragPayload::Item(dragged)) = egui::DragAndDrop::payload::<crate::panels::DragPayload>(&ctx).as_deref()
@@ -1786,7 +1786,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
     // Column headers scroll with the outline and never spill into the time ruler.
     let hp = p.with_clip_rect(Rect::from_min_max(ch.min, pos2(graph_x0 - 1.0, ch.max.y)));
     let hic = |icon: Icon, x: f32| icons::paint(&hp, Rect::from_center_size(pos2(x, hy), vec2(12.0, 12.0)), icon, t.text_dim);
-    let htext = |x: f32, s: &str| hp.text(pos2(x, hy), Align2::LEFT_CENTER, s, Tokens::ui(11.0), t.text_dim);
+    let htext = |x: f32, s: &str| hp.text(pos2(x, hy), Align2::LEFT_CENTER, crate::i18n::tr(s), Tokens::ui(11.0), t.text_dim);
     if vis.av {
         hic(Icon::Eye, cw.av + 10.0);
         hic(Icon::Speaker, cw.av + 28.0);
@@ -1821,7 +1821,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
     }
     if vis.parent {
         icons::paint(&hp, Rect::from_center_size(pos2(cw.parent + 10.0, hy), vec2(12.0, 12.0)), Icon::PickWhip, t.text_dim);
-        htext(cw.parent + 20.0, "Parent & Link");
+        htext(cw.parent + 20.0, crate::i18n::tr("Parent & Link"));
     }
     for (on, x, s) in [(vis.in_, cw.in_, "In"), (vis.out, cw.out, "Out"), (vis.duration, cw.duration, "Duration"), (vis.stretch, cw.stretch, "Stretch")] {
         if on {
@@ -2139,7 +2139,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
                 // Modes.
                 if app.ui.timeline.show_modes && layer.source.is_av() {
                     let mr = Rect::from_min_size(pos2(cw.mode + 2.0, cy - 9.0), vec2(80.0, 18.0));
-                    let mresp = widgets::dropdown(ui, mr, layer.blend_mode.label(), &t, egui::Id::new(("mode", layer.id.0)));
+                    let mresp = widgets::dropdown(ui, mr, crate::i18n::tr(layer.blend_mode.label()), &t, egui::Id::new(("mode", layer.id.0)));
                     app.auto.add(&format!("timeline.layer.{}.mode", layer.id.0), mr, "Mode");
                     let pop = egui::Id::new(("mode-pop", layer.id.0));
                     if mresp.clicked() {
@@ -2149,7 +2149,8 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
                         .iter()
                         .flat_map(|m| if m.ends_group() { vec![m.label().to_string(), "-".to_string()] } else { vec![m.label().to_string()] })
                         .collect();
-                    if let Some(i) = widgets::popup_menu(ui, pop, mr.left_bottom(), &opts, opts.iter().position(|o| o == layer.blend_mode.label())) {
+                    let displayed: Vec<String> = opts.iter().map(|o| crate::i18n::tr(o).to_owned()).collect();
+                    if let Some(i) = widgets::popup_menu(ui, pop, mr.left_bottom(), &displayed, opts.iter().position(|o| o == layer.blend_mode.label())) {
                         actions.push(("layer.setBlendMode".into(), json!({"layers": [layer.id.0], "mode": opts[i]})));
                     }
                     let tr = Rect::from_center_size(pos2(cw.mode + 76.0 + 6.0, cy), vec2(14.0, 14.0));
@@ -2159,8 +2160,8 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
                     // Track matte: layer picker + kind.
                     let mr = Rect::from_min_size(pos2(cw.trkmat + 2.0, cy - 9.0), vec2(104.0, 18.0));
                     let label = match layer.track_matte {
-                        Some(m) => comp.layer(m.layer).map(|l| format!("{} {}", idx_of(l.id), l.name)).unwrap_or("None".into()),
-                        None => "No Track Matte".into(),
+                        Some(m) => comp.layer(m.layer).map(|l| format!("{} {}", idx_of(l.id), l.name)).unwrap_or(crate::i18n::tr("None").into()),
+                        None => crate::i18n::tr("No Track Matte").into(),
                     };
                     // The cell is too narrow for the mode as well: it is in the tooltip and ticked in the menu.
                     let tip = layer.track_matte.map(|m| format!("{label} · {}", crate::i18n::tr(m.kind.label())));
@@ -2185,7 +2186,8 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
                         }
                     }
                     let current = layer.track_matte.and_then(|m| opts.iter().position(|o| o == m.kind.label()));
-                    if let Some(i) = widgets::popup_menu(ui, pop, mr.left_bottom(), &opts, current) {
+                    let displayed: Vec<String> = opts.iter().map(|o| crate::i18n::tr(o).to_owned()).collect();
+                    if let Some(i) = widgets::popup_menu(ui, pop, mr.left_bottom(), &displayed, current) {
                         let ids: Vec<LayerId> = candidates.iter().map(|l| l.id).collect();
                         if let Some(a) = opts.get(i).and_then(|o| track_matte_pick(layer, &ids, i, o)) {
                             actions.push(a);
@@ -2209,7 +2211,11 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
                         crate::i18n::tr("Parent pick whip: drag onto a layer"),
                     );
                     let pr_rect = Rect::from_min_size(pos2(cw.parent + 20.0, cy - 9.0), vec2(94.0, 18.0));
-                    let plabel = layer.parent.and_then(|p| comp.layer(p)).map(|l| format!("{}. {}", idx_of(l.id), l.name)).unwrap_or_else(|| "None".into());
+                    let plabel = layer
+                        .parent
+                        .and_then(|p| comp.layer(p))
+                        .map(|l| format!("{}. {}", idx_of(l.id), l.name))
+                        .unwrap_or_else(|| crate::i18n::tr("None").into());
                     let presp = widgets::dropdown(ui, pr_rect, &plabel, &t, egui::Id::new(("parent", layer.id.0)));
                     app.auto.add(&format!("timeline.layer.{}.parent", layer.id.0), pr_rect, "Parent");
                     let pop = egui::Id::new(("par-pop", layer.id.0));
@@ -2217,7 +2223,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
                         widgets::open_popup(ui, pop);
                     }
                     let mut cands: Vec<&Layer> = vec![];
-                    let mut popts = vec!["None".to_string(), "-".to_string()];
+                    let mut popts = vec![crate::i18n::tr("None").to_string(), "-".to_string()];
                     if widgets::popup_is_open(ui, pop) {
                         for (i, l) in comp.layers.iter().enumerate().filter(|(_, l)| l.id != layer.id) {
                             popts.push(format!("{}. {}", i + 1, l.name));
@@ -2389,6 +2395,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
                     GroupKind::Effect { effect } => Some(effect.as_str()),
                     _ => None,
                 }) {
+                    Some(effect) if crate::i18n::language(app) == "ko" => crate::i18n::ko_full::effect_group(effect, name),
                     Some(effect) => crate::i18n::effects::group(effect, name),
                     None => name.clone(),
                 };
@@ -2518,7 +2525,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
             RowKind::Waveform { item } => {
                 lp.rect_filled(left, 0.0, if ri % 2 == 0 { t.row } else { t.row_alt });
                 let indent = cw.name + 6.0 + 14.0 * row.depth as f32;
-                lp.text(pos2(indent + 10.0, cy), Align2::LEFT_CENTER, "Waveform", Tokens::ui(12.0), t.text);
+                lp.text(pos2(indent + 10.0, cy), Align2::LEFT_CENTER, crate::i18n::tr("Waveform"), Tokens::ui(12.0), t.text);
                 let wr = Rect::from_min_max(pos2(graph_x0, r.min.y), r.max);
                 gp.rect_filled(wr, 0.0, t.tl_bg);
                 app.auto.add(&format!("timeline.layer.{}.waveform", layer.id.0), wr, "Waveform");
@@ -2528,7 +2535,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
                         gp.text(
                             pos2(tm.x(layer.in_point.seconds()).max(wr.min.x) + 6.0, wr.center().y),
                             Align2::LEFT_CENTER,
-                            "Building waveform…",
+                            crate::i18n::tr("Building waveform…"),
                             Tokens::ui(11.0),
                             t.text_faint,
                         );
@@ -2554,7 +2561,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
                 );
                 let indent = cw.name + 6.0 + 14.0 * row.depth as f32;
                 lp.text(pos2(indent + 12.0, cy), Align2::LEFT_CENTER, crate::i18n::tr("Expression:"), Tokens::ui(11.5), t.text_dim);
-                lp.text(pos2(indent + 82.0, cy), Align2::LEFT_CENTER, &prop.name, Tokens::ui(11.5), t.text);
+                lp.text(pos2(indent + 82.0, cy), Align2::LEFT_CENTER, crate::i18n::tr(&prop.name), Tokens::ui(11.5), t.text);
                 // "=" enable switch and the property pick whip (AE's expression controls).
                 let en_r = Rect::from_center_size(pos2(cw.switches + 10.0, cy), vec2(16.0, 16.0));
                 let en = ui.interact(en_r, egui::Id::new(("expr-en", uid)), Sense::click()).on_hover_text(crate::i18n::tr("Enable Expression"));
@@ -2762,8 +2769,15 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
                 // 3D layers show Rotation as "Z Rotation" next to X/Y Rotation.
                 let is_tr_rot = layer.transform().and_then(|t| t.get("rotation")).is_some_and(|r| r.uid == prop.uid);
                 let base = if is_tr_rot && prop.name == "Rotation" && layer.is_3d() { "Z Rotation".to_string() } else { prop.name.clone() };
-                let pname = if prop.has_expression() { format!("{base}  =") } else { base };
-                lp.text(pos2(name_x, cy), Align2::LEFT_CENTER, &pname, Tokens::ui(12.0), if prop.has_expression() { t.expr_text } else { t.text });
+                let translated_base = crate::i18n::tr(&base);
+                let pname = if prop.has_expression() { format!("{translated_base}  =") } else { translated_base.to_owned() };
+                lp.text(
+                    pos2(name_x, cy),
+                    Align2::LEFT_CENTER,
+                    crate::i18n::tr(&pname),
+                    Tokens::ui(12.0),
+                    if prop.has_expression() { t.expr_text } else { t.text },
+                );
                 let name_rect = Rect::from_min_max(pos2(name_x, r.min.y), pos2(cw.switches - 2.0, r.max.y));
                 let name_resp = ui.interact(name_rect, egui::Id::new(("pname", uid)), Sense::click_and_drag());
                 app.auto.add(&format!("timeline.prop.{uid}.name"), name_rect, &prop.name);
@@ -4165,6 +4179,9 @@ fn value_editor(
                 .map(|_| std::iter::once("None".to_string()).chain(layer.masks().into_iter().flat_map(|m| m.groups().map(|g| g.name.clone()))).collect());
             let ui_opts = mask_opts.map(|options| ParamUi::Popup { options });
             if let ParamUi::Popup { options } = ui_opts.as_ref().unwrap_or(&prop.ui) {
+                let displayed: Vec<String> =
+                    options.iter().enumerate().map(|(i, o)| if ui_opts.is_some() && i > 0 { o.clone() } else { crate::i18n::tr(o).to_owned() }).collect();
+                let options = &displayed;
                 let r = Rect::from_min_size(pos2(x, at.y - 9.0), vec2(150.0, 18.0));
                 let label = options.get(*i as usize).cloned().unwrap_or_default();
                 let pop = egui::Id::new(("epop", uid));

@@ -1404,6 +1404,9 @@ fn mr_mercury(ctx: &EffectCtx, mut b: Buf) -> Buf {
             // Refract the layer through the blob.
             let sp = src.sample_bilinear_clamped(x as f64 + 0.5 - n[0] as f64 * 12.0 * s as f64, y as f64 + 0.5 - n[1] as f64 * 12.0 * s as f64);
             let (c, sa) = unpremul(sp);
+            // Opt-in: carry the refracted source's transparency into the shaded blob.
+            // Keep legacy reflection-only coverage for existing projects.
+            let cov = if pr.b("extras/useSourceAlpha") { cov * sa.clamp(0.0, 1.0) } else { cov };
             let base = if sa > 0.0 { c } else { [0.7, 0.7, 0.75] };
             let nl = (n[0] * l[0] + n[1] * l[1] + n[2] * l[2]).max(0.0);
             let hv = norm3([l[0], l[1], l[2] + 1.0]);
@@ -1605,6 +1608,7 @@ pub fn specs() -> Vec<EffectSpec> {
                 p("blobInfluence", "Blob Influence", num(100.0), slider(0.0, 400.0, 0.0, 200.0, 1)),
                 p("blobBirthSize", "Blob Birth Size", num(0.5), slider(0.0, 10.0, 0.0, 2.0, 2)),
                 p("blobDeathSize", "Blob Death Size", num(0.25), slider(0.0, 10.0, 0.0, 2.0, 2)),
+                p("extras/useSourceAlpha", "Use Source Alpha", Value::Bool(false), ParamUi::Checkbox),
                 p("light/lightIntensity", "Light Intensity", num(100.0), slider(0.0, 400.0, 0.0, 200.0, 1)),
                 p("light/lightColor", "Light Color", col(1.0, 1.0, 1.0), ParamUi::Color),
                 p("light/lightHeight", "Light Height", num(50.0), slider(-100.0, 100.0, -100.0, 100.0, 1)),
@@ -2015,6 +2019,35 @@ mod tests {
         assert!(a.data.iter().any(|p| p[3] > 0.5), "blobs visible");
         let none = run("ec.sim.ccmrmercury", &[("birthRate", num(0.0))], ramp(48, 48), 1.4);
         assert!(none.data.iter().all(|p| p[3] == 0.0));
+    }
+
+    #[test]
+    fn mercury_source_alpha_preserves_premultiplication_and_legacy() {
+        let mut v = vec![("producer", pt(24.0, 16.0)), ("radiusX", num(5.0)), ("radiusY", num(5.0)), ("birthRate", num(3.0))];
+        let opaque = Image::filled(48, 48, [0.4, 0.2, 0.1, 1.0]);
+        let legacy = run("ec.sim.ccmrmercury", &v, opaque.clone(), 1.4);
+        let legacy_empty = run("ec.sim.ccmrmercury", &v, Image::new(48, 48), 1.4);
+        assert!(legacy_empty.data.iter().any(|p| p[3] > 0.5));
+        v.push(("extras/useSourceAlpha", Value::Bool(true)));
+        assert_eq!(legacy, run("ec.sim.ccmrmercury", &v, opaque, 1.4));
+        let empty = run("ec.sim.ccmrmercury", &v, Image::new(48, 48), 1.4);
+        assert!(empty.data.iter().all(|p| *p == [0.0; 4]));
+        let half = run("ec.sim.ccmrmercury", &v, Image::filled(48, 48, [0.2, 0.1, 0.05, 0.5]), 1.4);
+        for (p, q) in half.data.iter().zip(&legacy.data) {
+            for k in 0..4 {
+                assert!((p[k] - q[k] * 0.5).abs() < 1e-6);
+            }
+        }
+        // A shaped source retains its empty region, rather than filling it with grey.
+        let mut shaped = Image::filled(48, 48, [0.4, 0.2, 0.1, 1.0]);
+        for y in 0..48 {
+            for x in 0..24 {
+                shaped.set(x, y, [0.0; 4]);
+            }
+        }
+        let result = run("ec.sim.ccmrmercury", &v, shaped, 1.4);
+        assert!(result.data.iter().any(|p| p[3] > 0.0));
+        assert!(result.data.iter().zip(&legacy.data).any(|(p, q)| p[3] == 0.0 && q[3] > 0.5));
     }
 
     #[test]

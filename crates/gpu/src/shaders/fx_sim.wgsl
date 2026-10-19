@@ -383,6 +383,7 @@ fn fxm_norm3(v: vec3<f32>) -> vec3<f32> {
 
 // Mr. Mercury's shading (src = layer, aux = blob field). f[0] = (ambient, diffuse, specular,
 // roughness); f[1] = (metal, light intensity, render scale); f[2] = light direction; f[3] = colour.
+// u[1].x opts into refracted source alpha; zero preserves legacy coverage.
 @compute @workgroup_size(16, 16)
 fn fxm_mercury(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = out_dims();
@@ -397,10 +398,13 @@ fn fxm_mercury(@builtin(global_invocation_id) gid: vec3<u32>) {
         textureStore(out, p, vec4<f32>(0.0));
         return;
     }
-    let cov = clamp((f - thr * 0.8) / (thr * 0.4), 0.0, 1.0);
+    var cov = clamp((f - thr * 0.8) / (thr * 0.4), 0.0, 1.0);
     let n = fxm_norm3(vec3<f32>(fv.y * 3.0, fv.z * 3.0, 1.0 / (1.0 + f)));
     let s = P.f[1].z;
     let smp = fxm_unpremul(sample_bilinear_clamped(src, f32(p.x) + 0.5 - n.x * 12.0 * s, f32(p.y) + 0.5 - n.y * 12.0 * s));
+    if (P.u[1].x != 0u) {
+        cov *= clamp(smp.w, 0.0, 1.0);
+    }
     var base = smp.xyz;
     if (smp.w <= 0.0) {
         base = vec3<f32>(0.7, 0.7, 0.75);

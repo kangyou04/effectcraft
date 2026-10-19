@@ -593,7 +593,7 @@ fn colorama_wheel(
     p.text(
         pos2(sr.min.x, sr.max.y + 9.0),
         Align2::LEFT_CENTER,
-        "Click the ring to add a colour; Alt-click a stop (or drag it off) to remove it",
+        crate::i18n::tr("Click the ring to add a colour; Alt-click a stop (or drag it off) to remove it"),
         Tokens::ui(10.5),
         t.text_faint,
     );

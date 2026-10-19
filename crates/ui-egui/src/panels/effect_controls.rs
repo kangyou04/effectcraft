@@ -15,6 +15,7 @@
 //!   Levels a histogram; Lumetri's curves, Colorama's output cycle, Glow's colour map and
 //!   Reshape's correspondence points have visual editors ([`super::fx_editors`]).
 
+use crate::i18n::{tr, tr_args};
 use effectcraft_engine::geom::Mat3;
 use effectcraft_engine::keyframe::Value;
 use effectcraft_engine::project::{GroupKind, Layer, Node, ParamUi, PropGroup, Property};
@@ -196,9 +197,9 @@ pub(crate) fn toggle_pick(app: &mut EffectcraftApp, kind: &str, layer: &Layer, p
         app.ui.fx_pick = Some(pick);
         app.ui.text_color_pick = None;
         app.ui.status = if kind == "point" {
-            format!("Click in the Composition panel to set {}", prop.name)
+            tr_args("Click in the Composition panel to set {}", &[&tr(&prop.name)])
         } else {
-            format!("Click in the Composition panel to sample {}", prop.name)
+            tr_args("Click in the Composition panel to sample {}", &[&tr(&prop.name)])
         };
     }
 }
@@ -271,7 +272,7 @@ fn prop_row(
     };
     let name_clip = Rect::from_min_max(pos2(swr.max.x + 6.0, r.min.y), pos2(vx - 6.0, r.max.y));
     app.auto.add(&format!("effectControls.prop.{uid}.name"), name_clip, &prop.name);
-    p.with_clip_rect(name_clip.intersect(p.clip_rect())).text(pos2(swr.max.x + 6.0, cy), Align2::LEFT_CENTER, &prop.name, Tokens::ui(12.0), t.text);
+    p.with_clip_rect(name_clip.intersect(p.clip_rect())).text(pos2(swr.max.x + 6.0, cy), Align2::LEFT_CENTER, tr(&prop.name), Tokens::ui(12.0), t.text);
     ui.interact(name_clip, egui::Id::new(("ec-prop-name", uid)), Sense::click());
     app.auto.add(&format!("effectControls.prop.{uid}.name"), name_clip, &prop.name);
     let merge = format!("ec-{uid}");
@@ -295,7 +296,7 @@ fn prop_row(
     match &value {
         Value::Scalar(v) if matches!(prop.ui, ParamUi::Mask) => {
             // A mask of this layer ("Path" popup).
-            let mut opts = vec!["None".to_string()];
+            let mut opts = vec![tr("None").to_string()];
             if let Some(m) = layer.masks() {
                 opts.extend(m.groups().map(|g| g.name.clone()));
             }
@@ -407,11 +408,12 @@ fn prop_row(
             if widgets::checkbox(ui, cr, *b, &t, egui::Id::new(("ec-b", uid))).clicked() {
                 set(actions, json!(!b));
             }
-            p.text(pos2(cr.max.x + 6.0, cy), Align2::LEFT_CENTER, &prop.name, Tokens::ui(12.0), t.text_dim);
+            p.text(pos2(cr.max.x + 6.0, cy), Align2::LEFT_CENTER, tr(&prop.name), Tokens::ui(12.0), t.text_dim);
             app.auto.add(&format!("effectControls.prop.{uid}.value"), cr, &prop.name);
         }
         Value::Enum(i) => {
             if let ParamUi::Popup { options } = &prop.ui {
+                let options: Vec<String> = options.iter().map(|o| tr(o).to_owned()).collect();
                 let widest = options.iter().map(|o| p.layout_no_wrap(o.clone(), Tokens::ui(11.5), t.text).size().x).fold(0.0, f32::max);
                 let dr = Rect::from_min_size(pos2(vx, cy - 9.0), vec2((widest + 30.0).clamp(80.0, (r.max.x - vx - 56.0).max(80.0)), 18.0));
                 let pop = egui::Id::new(("ec-epop", uid));
@@ -419,7 +421,7 @@ fn prop_row(
                     widgets::open_popup(ui, pop);
                 }
                 app.auto.add(&format!("effectControls.prop.{uid}.value"), dr, &prop.name);
-                if let Some(ni) = widgets::popup_menu(ui, pop, dr.left_bottom(), options, Some(*i as usize)) {
+                if let Some(ni) = widgets::popup_menu(ui, pop, dr.left_bottom(), &options, Some(*i as usize)) {
                     set(actions, json!(ni));
                 }
             }
@@ -429,13 +431,13 @@ fn prop_row(
             if let Some(comp) = comp {
                 let dr = Rect::from_min_size(pos2(vx, cy - 9.0), vec2(((r.max.x - vx) * 0.55).clamp(90.0, 170.0), 18.0));
                 let idx_of = |id: u64| comp.layers.iter().position(|x| x.id.0 == id);
-                let name = l.and_then(|id| idx_of(id).map(|i| format!("{}. {}", i + 1, comp.layers[i].name))).unwrap_or_else(|| "None".into());
+                let name = l.and_then(|id| idx_of(id).map(|i| format!("{}. {}", i + 1, comp.layers[i].name))).unwrap_or_else(|| tr("None").into());
                 let pop = egui::Id::new(("ec-lpop", uid));
                 if widgets::dropdown(ui, dr, &name, &t, egui::Id::new(("ec-l", uid))).clicked() {
                     widgets::open_popup(ui, pop);
                 }
                 app.auto.add(&format!("effectControls.prop.{uid}.value"), dr, &prop.name);
-                let mut opts = vec!["None".to_string()];
+                let mut opts = vec![tr("None").to_string()];
                 opts.extend(comp.layers.iter().enumerate().map(|(i, l)| format!("{}. {}", i + 1, l.name)));
                 let cur = l.and_then(idx_of).map(|i| i + 1).unwrap_or(0);
                 if let Some(i) = widgets::popup_menu(ui, pop, dr.left_bottom(), &opts, Some(cur)) {
@@ -728,7 +730,7 @@ fn group_rows(
                     if widgets::twirl(ui, tw, open, egui::Id::new(("ec-g", sg.uid)), &t).clicked() {
                         toggle_closed(app, sg, open, ui.input(|i| i.modifiers.alt || i.modifiers.command));
                     }
-                    let name = p.text(pos2(tw.max.x + 6.0, r.center().y), Align2::LEFT_CENTER, &sg.name, Tokens::ui(12.0), t.text);
+                    let name = p.text(pos2(tw.max.x + 6.0, r.center().y), Align2::LEFT_CENTER, tr(&sg.name), Tokens::ui(12.0), t.text);
                     app.auto.add(&format!("effectControls.group.{}.name", sg.uid), name, &sg.name);
                 }
                 if open {
@@ -1146,7 +1148,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
         bp.text(
             pos2(body.center().x, body.min.y + 40.0),
             Align2::CENTER_CENTER,
-            "No effects. Drag one from Effects & Presets.",
+            crate::i18n::tr("No effects. Drag one from Effects & Presets."),
             Tokens::ui(12.0),
             t.text_faint,
         );
@@ -1165,7 +1167,8 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
         let GroupKind::Effect { effect } = &g.kind else { continue };
         // The header draws the effect's name in the interface language; the automation labels
         // below keep the property tree's name, which is the registry's English name (#821).
-        let shown = crate::i18n::effects::group(effect, &g.name);
+        let shown =
+            if crate::i18n::language(app) == "ko" { crate::i18n::ko_full::effect_group(effect, &g.name) } else { crate::i18n::effects::group(effect, &g.name) };
         let r = Rect::from_min_size(pos2(body.min.x, y), vec2(body.width(), ROW + 2.0));
         tops.push((g.uid, r.min.y));
         y += ROW + 2.0;
@@ -1243,9 +1246,9 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
         }
         if let Some(spec) = effectcraft_engine::effects::find(effect) {
             let lines = vec![
-                crate::i18n::effects::name(spec.id, spec.name),
-                format!("Category: {}", crate::i18n::effects::category(spec.category)),
-                "EffectCraft built-in effect (MIT OR Apache-2.0)".to_string(),
+                tr(spec.name).to_string(),
+                tr_args("Category: {}", &[&tr(spec.category)]),
+                tr("EffectCraft built-in effect (MIT OR Apache-2.0)").to_string(),
             ];
             let _ = widgets::popup_menu(ui, apop, about.left_bottom(), &lines, None);
         }
@@ -1474,7 +1477,7 @@ pub fn viewer_hook(
         }
         let resp = ui.interact(map.area, egui::Id::new("viewer-fx-pick"), Sense::click());
         app.auto.add("viewer.fxPick", map.area, &pick.name);
-        let hint = if pick.kind == "point" { format!("Click to set {}", pick.name) } else { format!("Click to sample {}", pick.name) };
+        let hint = if pick.kind == "point" { tr_args("Click to set {}", &[&tr(&pick.name)]) } else { tr_args("Click to sample {}", &[&tr(&pick.name)]) };
         let chip = Rect::from_min_size(map.area.min + vec2(10.0, 10.0), vec2(220.0, 22.0));
         painter.rect_filled(chip, 11.0, Color32::from_black_alpha(180));
         painter.text(chip.center(), Align2::CENTER_CENTER, hint, Tokens::ui(11.5), t.text);

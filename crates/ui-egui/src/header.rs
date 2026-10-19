@@ -66,8 +66,8 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
         }
         app.auto.add_response(&format!("tools.{cur:?}"), &resp, cur.label());
         let tip = match cur.shortcut() {
-            Some(s) => format!("{} ({})", cur.label(), crate::menus::shortcut_text(s)),
-            None => cur.label().to_string(),
+            Some(s) => format!("{} ({})", tr(cur.label()), crate::menus::shortcut_text(s)),
+            None => tr(cur.label()).to_string(),
         };
         let resp = resp.on_hover_text(tip);
         let held = ui.data(|d| d.get_temp::<egui::Id>(held_id)) == Some(id);
@@ -103,7 +103,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
             let close_behavior = if held && resp.clicked() { egui::PopupCloseBehavior::IgnoreClicks } else { egui::PopupCloseBehavior::CloseOnClickOutside };
             egui::Popup::menu(&resp).style(crate::widgets::menu_style).open_memory(command).close_behavior(close_behavior).show(|ui| {
                 for tool in slot.iter() {
-                    let row = ui.selectable_label(app.ui.tool == *tool, tool.label());
+                    let row = ui.selectable_label(app.ui.tool == *tool, tr(tool.label()));
                     app.auto.add(&format!("tools.select.{tool:?}"), row.rect, tool.label());
                     if row.clicked() {
                         app.ui.tool = *tool;
@@ -274,7 +274,8 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
     // Small Screen, Standard.
     let shown = ["Standard", "Small Screen", "Learn", "Review", "Default"];
     for name in shown {
-        let g = p.layout_no_wrap(name.to_string(), Tokens::ui(12.0), t.text);
+        let label = crate::i18n::label(app, "window.workspace", name);
+        let g = p.layout_no_wrap(label.to_string(), Tokens::ui(12.0), t.text);
         let w = g.size().x + 16.0;
         let r = Rect::from_min_max(pos2(rx - w, cy - 13.0), pos2(rx, cy + 13.0));
         if r.min.x < x + 120.0 {
@@ -654,27 +655,9 @@ fn ws_menu(app: &mut EffectcraftApp, ui: &mut egui::Ui) {
     }
 }
 
-/// The ArtCraft mark as supplied in `docs/brand` (the README's and getartcraft.com's logo; used
-/// unmodified, see `docs/brand/LICENSE-brand.txt`).
-static ARTCRAFT_MARK: &[u8] = include_bytes!("../../../docs/brand/artcraft-mark.png");
-
-/// The ArtCraft mark in `r` (decoded once into a mipmapped texture, so it stays crisp from the
-/// 24 px Tools bar to the About dialog). Nothing is drawn if it can't be decoded.
+/// Original text-only community build badge; no ArtCraft trademark asset is embedded.
 pub fn paint_logo(p: &egui::Painter, r: Rect) {
-    let ctx = p.ctx();
-    let id = egui::Id::new("artcraft-mark");
-    let tex = ctx.data(|d| d.get_temp::<Option<egui::TextureHandle>>(id)).unwrap_or_else(|| {
-        let tex = image::load_from_memory_with_format(ARTCRAFT_MARK, image::ImageFormat::Png).ok().map(|img| {
-            let img = img.to_rgba8();
-            let ci = egui::ColorImage::from_rgba_unmultiplied([img.width() as usize, img.height() as usize], img.as_raw());
-            ctx.load_texture("artcraft-mark", ci, egui::TextureOptions::LINEAR.with_mipmap_mode(Some(egui::TextureFilter::Linear)))
-        });
-        ctx.data_mut(|d| d.insert_temp(id, tex.clone()));
-        tex
-    });
-    if let Some(t) = tex {
-        p.image(t.id(), r, Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)), Color32::WHITE);
-    }
+    p.text(r.center(), egui::Align2::CENTER_CENTER, "EC", Tokens::semibold(r.height() * 0.45), p.ctx().global_style().visuals.text_color());
 }
 
 #[cfg(test)]

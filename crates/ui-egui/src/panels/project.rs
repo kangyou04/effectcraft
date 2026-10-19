@@ -14,6 +14,7 @@ use effectcraft_engine::project::{Item, ItemId, ItemKind};
 use egui::{Align2, Color32, Rect, Sense, Stroke, pos2, vec2};
 use serde_json::json;
 
+use crate::i18n::tr;
 use crate::icons::{self, Icon};
 use crate::panels::DragPayload;
 use crate::theme::Tokens;
@@ -436,14 +437,14 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
             app.auto.add(&format!("project.details.{i}"), r, l);
         }
     } else {
-        let hint = "Select an item to see its details";
+        let hint = tr("Select an item to see its details");
         let r = widgets::text_fit(&p, head.center(), Align2::CENTER_CENTER, hint, Tokens::ui(11.0), head.width() - 20.0, t.text_faint);
         app.auto.add("project.details.hint", r, hint);
     }
     // Search.
     let sr = Rect::from_min_size(pos2(rect.min.x + 8.0, head.max.y + 2.0), vec2(rect.width() - 16.0, 22.0));
     let mut q = app.ui.project_search.clone();
-    widgets::search_field(ui, sr, &mut q, "Search project", &t);
+    widgets::search_field(ui, sr, &mut q, tr("Search project"), &t);
     app.ui.project_search = q;
     app.auto.add("project.search", sr, "Search");
     // Column header: Name, Label, then the visible optional columns.
@@ -475,7 +476,13 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
             continue;
         }
         let resp = ui.interact(hr.intersect(hdr), egui::Id::new(("proj-sort", *key)), Sense::click());
-        hp.with_clip_rect(hr).text(pos2(*x, hdr.center().y), Align2::LEFT_CENTER, *label, Tokens::ui(11.0), if resp.hovered() { t.text } else { t.text_dim });
+        hp.with_clip_rect(hr).text(
+            pos2(*x, hdr.center().y),
+            Align2::LEFT_CENTER,
+            tr(label),
+            Tokens::ui(11.0),
+            if resp.hovered() { t.text } else { t.text_dim },
+        );
         if *key == "label" {
             icons::paint(&hp, Rect::from_center_size(pos2(label_x, hdr.center().y), vec2(10.0, 10.0)), Icon::Keyframe, t.text_dim);
         }
@@ -765,7 +772,7 @@ pub fn show(app: &mut EffectcraftApp, ui: &mut egui::Ui, rect: Rect) {
             }
             let cp = lp.with_clip_rect(cell);
             let txt = match *key {
-                "type" => it.type_name().to_string(),
+                "type" => tr(it.type_name()).to_string(),
                 "size" => file_size(it).map(fmt_size).unwrap_or_default(),
                 "duration" => it.duration().map(|d| fmt_dur(d.seconds(), it.frame_rate().map(|r| r.as_f64()).unwrap_or(30.0))).unwrap_or_default(),
                 "fps" => it.frame_rate().map(|f| format!("{:.2}", f.as_f64())).unwrap_or_default(),

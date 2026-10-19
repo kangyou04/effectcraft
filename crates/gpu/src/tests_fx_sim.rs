@@ -106,6 +106,11 @@ fn bubbles_drizzle_mercury() {
 }
 
 #[test]
+fn mercury_source_alpha() {
+    case("ec.sim.ccmrmercury", &[("birthRate", n(4.0)), ("blobBirthSize", n(1.5)), ("extras/useSourceAlpha", on())], 1.0, 0.0);
+}
+
+#[test]
 fn hair_wave_world_foam() {
     case("ec.sim.cchair", &[("density", n(300.0)), ("length", n(10.0))], 0.0, 0.0);
     case("ec.sim.cchair", &[("density", n(200.0)), ("length", n(14.0)), ("hairColor/colorInheritance", n(30.0)), ("thickness", n(1.5))], 0.0, 0.0);

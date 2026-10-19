@@ -1740,6 +1740,7 @@ impl EffectcraftApp {
             self.toast.as_ref().filter(|(_, at)| now - at < 4.0).map(|(m, _)| m.clone())
         };
         if let Some(m) = msg {
+            let m = crate::i18n::ko_full::status(&m);
             let t = &self.tokens;
             let galley = ui.painter().layout_no_wrap(m.clone(), Tokens::ui(12.0), t.text);
             let r = egui::Rect::from_min_size(egui::pos2(full.min.x + 16.0, full.max.y - 44.0 - lift), galley.size() + egui::vec2(24.0, 14.0));
